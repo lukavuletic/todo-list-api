@@ -1,8 +1,7 @@
-import * as express from 'express';
-import * as cors from 'cors';
-import { graphqlHTTP } from 'express-graphql';
-import { GraphQLSchema, GraphQLObjectType, GraphQLString, GraphQLNonNull, GraphQLInt, GraphQLList } from 'graphql';
+import express from 'express';
+import cors from 'cors';
 import { Client } from 'pg';
+import { ApolloServer, ApolloError, gql } from 'apollo-server-express';
 
 const table = 'todo."Todo"';
 
@@ -15,91 +14,88 @@ const client = new Client({
 });
 client.connect();
 
-const TodoTypeFields = {
-    todoID: { type: new GraphQLNonNull(GraphQLInt) },
-    task: { type: new GraphQLNonNull(GraphQLString) },
-    category: { type: new GraphQLNonNull(GraphQLString) },
-}
-
-interface ITodoTypeFields {
-    todoID: number;
+interface ITodo {
+    id: number;
     task: string;
     category: string;
 }
 
-const TodoType = new GraphQLObjectType({
-    name: 'todo',
-    description: 'A todo',
-    fields: () => (TodoTypeFields),
-});
+const typeDefs = gql`
+    #A todo
+    type Todo {
+        todoID: ID!
+        task: String!
+        category: String!
+    }
 
-type res = { rows: {}[] };
+    type Query {
+        todos: [Todo]
+    }
 
-const QueryRoot = new GraphQLObjectType({
-    name: 'Query',
-    description: 'Root query',
-    fields: (): any => ({
-        todos: {
-            type: GraphQLList(TodoType),
-            resolve: async () => {
-                const res: res = await client.query(`SELECT * FROM ${table}`).then((res: res) => res);
-                return res.rows || res;
+    type Mutation {
+        deleteTodo(id: ID!): String
+        createTodo(task: String!, category: String!): Todo
+        updateTodo(id: ID!, task: String!, category: String!): Todo
+    }
+`;
+
+
+// start the apollo server
+(async () => {
+    const resolvers = {
+        Query: {
+            async todos(): Promise<ITodo[]> {
+                return await client.query(`SELECT * FROM ${table}`).then(({ rows }: { rows: ITodo[] }) => rows);
             },
         },
-        todo: {
-            type: TodoType,
-            args: { todoID: TodoTypeFields.todoID },
-            resolve: async (parent: any, { todoID }: { todoID: ITodoTypeFields['todoID'] }) => {
-                const res: res = await client.query(`SELECT * FROM ${table} WHERE "todoID" = '${todoID}'`).then((res: res) => {
-                    return res;
-                });
-                return res.rows && res.rows[0] || res;
+        Mutation: {
+            deleteTodo: async (_: undefined, args: { id: ITodo['id'] }): Promise<string> => {
+                const { id } = args;
+                try {
+                    await client.query(`DELETE from ${table} WHERE "todoID" = ${id}`).then((res: any) => { return res });
+                    return 'Task successfully deleted';
+                } catch (err) {
+                    throw new ApolloError(err);
+                }
             },
-        }
-    }),
-});
-
-const RootMutation = new GraphQLObjectType({
-    name: 'Mutation',
-    description: 'Root mutation',
-    fields: (): any => ({
-        deleteTodo: {
-            type: GraphQLString,
-            args: { todoID: TodoTypeFields.todoID },
-            resolve: async (parent: any, { todoID }: { todoID: ITodoTypeFields['todoID'] }) => {
-                await client.query(`DELETE from ${table} WHERE "todoID" = ${todoID}`).then(() => { return todoID });
-                return 'Task successfully deleted';
+            createTodo: async (_: undefined, args: { task: ITodo['task'], category: ITodo['category'] }): Promise<ITodo> => {
+                const { task, category } = args;
+                try {
+                    return await client.query(`INSERT INTO ${table} (task, category) VALUES ('${task}', '${category}') RETURNING *`)
+                        .then(({ rows }: { rows: ITodo[] }) => {
+                            return rows[0];
+                        });
+                } catch (err) {
+                    throw new ApolloError(err);
+                }
             },
+            updateTodo: async (_: undefined, args: { id: ITodo['id'], task: ITodo['task'], category: ITodo['category'] }): Promise<ITodo> => {
+                const { id, task, category } = args;
+                try {
+                    return await client.query(`UPDATE ${table} SET task = '${task}', category = '${category}' WHERE "todoID" = '${id}' RETURNING *`)
+                        .then(({ rows }: { rows: ITodo[] }) => {
+                            return rows[0];
+                        });
+                } catch (err) {
+                    throw new ApolloError(err);
+                }
+            }
         },
-        createTodo: {
-            type: TodoType,
-            args: { task: TodoTypeFields.task, category: TodoTypeFields.category },
-            resolve: async (parents: any, { task, category }: { task: ITodoTypeFields['task'], category: ITodoTypeFields['category'] }) => {
-                const res: res = await client.query(`INSERT INTO ${table} (task, category) VALUES ('${task}', '${category}') RETURNING *`).then((res: res) => {
-                    return res;
-                });
-                return res.rows && res.rows[0] || res;
-            },
-        },
-        updateTodo: {
-            type: TodoType,
-            args: TodoTypeFields,
-            resolve: async (parents: any, TodoType: ITodoTypeFields) => {
-                const res: res = await client.query(`UPDATE ${table} SET task = '${TodoType.task}', category = '${TodoType.category}' WHERE "todoID" = '${TodoType.todoID}' RETURNING *`).then((res: res) => {
-                    return res;
-                });
-                return res.rows && res.rows[0] || res;
-            },
-        },
-    }),
-});
+    }
 
-const schema = new GraphQLSchema({ query: QueryRoot, mutation: RootMutation });
+    const server = new ApolloServer({
+        typeDefs,
+        resolvers,
+    });
+    await server.start();
 
-const app = express();
-app.use(cors());
-app.use('/api', graphqlHTTP({
-    schema: schema,
-    graphiql: true,
-}));
-app.listen(4000);
+    const app = express();
+    const path = '/api';
+    app.use(cors());
+    server.applyMiddleware({ app, path });
+
+    app.listen({ port: 4000 });
+    console.log(`Server ready at 4000`);
+
+    // return { server, app };
+})();
