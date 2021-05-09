@@ -5,15 +5,6 @@ import { ApolloServer, ApolloError, gql } from 'apollo-server-express';
 
 const table = 'todo."Todo"';
 
-const client = new Client({
-    host: "localhost",
-    user: "postgres",
-    password: "superuser",
-    database: "todo",
-    port: 5432
-});
-client.connect();
-
 interface ITodo {
     id: number;
     task: string;
@@ -39,9 +30,29 @@ const typeDefs = gql`
     }
 `;
 
+async function connect() {
+    const client = new Client({
+        connectionString: 'postgres://superuser:superuser@postgres:5432/todo',
+    });
 
-// start the apollo server
-(async () => {
+    for (let nRetry = 1; nRetry <= 5; nRetry++) {
+        try {
+            await client.connect();
+            if (nRetry >= 1) {
+                console.info('Now successfully connected to Postgres');
+            }
+            break;
+        } catch (e) {
+            if (e.toString().includes('ECONNREFUSED') && nRetry < 5) {
+                console.info('ECONNREFUSED connecting to Postgres, ' +
+                    'maybe container is not ready yet, will retry ' + nRetry);
+                await new Promise(resolve => setTimeout(resolve, 10000));
+            } else {
+                throw e;
+            }
+        }
+    }
+
     const resolvers = {
         Query: {
             async todos(): Promise<ITodo[]> {
@@ -87,15 +98,28 @@ const typeDefs = gql`
         typeDefs,
         resolvers,
     });
-    await server.start();
+    try {
+        await server.start();
+        console.log('apollo started')
+    } catch (err) {
+        console.log('apollo server', err);
+    }
 
     const app = express();
     const path = '/api';
     app.use(cors());
     server.applyMiddleware({ app, path });
 
-    app.listen({ port: 4000 });
-    console.log(`Server ready at 4000`);
-
-    // return { server, app };
-})();
+    const port = 4000;
+    try {
+        await new Promise((resolve, reject) => {
+            app.listen(port, () => {
+                resolve(port);
+            });
+        });
+        console.log(`Server ready at 4000`);
+    } catch (err) {
+        console.log('server', err);
+    }
+}
+connect();

@@ -1,13 +1,13 @@
-FROM  mhart/alpine-node:8.11.4
+FROM node:12.0.0
 
-WORKDIR /api
+WORKDIR /src
 
-COPY package*.json /api/
+COPY ./package*.json ./
 
 RUN npm i
 
-COPY . /api/
+COPY . .
 
 EXPOSE 4000
 
-CMD ["npm", "start"]
+CMD ["npm",  "run", "docker:start"]
