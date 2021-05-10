@@ -2,8 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import { Client } from 'pg';
 import { ApolloServer, ApolloError, gql } from 'apollo-server-express';
+import { resolve } from 'path';
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ path: resolve(__dirname, '../../.env') });
 
 const table = 'todo."Todo"';
 
@@ -34,7 +35,7 @@ const typeDefs = gql`
 
 async function connect() {
     const client = new Client({
-        connectionString: `postgres://${process.env.PG_USER}:${process.env.PG_PW}@${process.env.HOST}:${process.env.PG_PORT}/todo`,
+        connectionString: `postgres://${process.env.PG_USER}:${process.env.PG_PW}@${process.env.HOST}:${process.env.PG_PORT_2}/todo`,
     });
 
     for (let nRetry: number = 1; nRetry <= 5; nRetry++) {
@@ -111,7 +112,7 @@ async function connect() {
     app.use(cors());
     server.applyMiddleware({ app, path });
 
-    const port = process.env.EXPRESS_PORT;
+    const port = process.env.REACT_APP_API_PORT;
     try {
         await new Promise((resolve) => {
             app.listen(port, () => {
