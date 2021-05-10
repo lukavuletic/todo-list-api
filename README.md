@@ -26,11 +26,10 @@ ALTER TABLE todo."Todo"
     OWNER to superuser;
 ```
 
-For connection to the database, please set environment variables in .env file in root folder.
-
 The other mandatory repository that needs to be ran for this project can be found on this link - https://github.com/lukavuletic/todo-list-client
 
 To run with docker-compose please create a docker-compose.yml file in a folder that includes both todo-list-api and todo-list-client and setup .env file next to docker-compose.yml file then execute command `docker-compose up --build -d`
+**Keep in mind that even if you decide to run without docker-compose, you still need .env file setup**
 
 .env
 ```
