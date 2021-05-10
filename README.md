@@ -51,14 +51,14 @@ version: "3"
 services:
     postgres:
         image: postgres
-        hostname: postgres
+        hostname: "${HOST}"
         container_name: postgres
         restart: always
         ports:
-            - "5433:5432"
+            - "${PG_PORT_1}:${PG_PORT_2}"
         environment: 
-            POSTGRES_USER: superuser
-            POSTGRES_PASSWORD: superuser
+            POSTGRES_USER: "${PG_USER}"
+            POSTGRES_PASSWORD: "${PG_PW}"
         volumes: 
             - ./postgres-data:/var/lib/postgreslql/data
         networks: 
@@ -68,7 +68,7 @@ services:
         hostname: api
         container_name: api
         ports:
-            - "4000:4000"
+            - "${API_PORT}:${REACT_APP_API_PORT}"
         volumes:
             - /api:/node_modules
         build:
@@ -82,7 +82,7 @@ services:
         hostname: client
         container_name: client
         ports:
-            - "3000:3000"
+            - "${CLIENT_PORT_1}:${CLIENT_PORT_2}"
         volumes:
             - /client:/node_modules
         build:
