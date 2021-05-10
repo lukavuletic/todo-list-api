@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import { Client } from 'pg';
 import { ApolloServer, ApolloError, gql } from 'apollo-server-express';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const table = 'todo."Todo"';
 
@@ -32,7 +34,7 @@ const typeDefs = gql`
 
 async function connect() {
     const client = new Client({
-        connectionString: 'postgres://superuser:superuser@postgres:5432/todo',
+        connectionString: `postgres://${process.env.PG_USER}:${process.env.PG_PW}@${process.env.HOST}:${process.env.PG_PORT}/todo`,
     });
 
     for (let nRetry = 1; nRetry <= 5; nRetry++) {
@@ -110,14 +112,14 @@ async function connect() {
     app.use(cors());
     server.applyMiddleware({ app, path });
 
-    const port = 4000;
+    const port = process.env.EXPRESS_PORT;
     try {
         await new Promise((resolve, reject) => {
             app.listen(port, () => {
                 resolve(port);
             });
         });
-        console.log(`Server ready at 4000`);
+        console.log(`Server ready at ${port}`);
     } catch (err) {
         console.log('server', err);
     }
