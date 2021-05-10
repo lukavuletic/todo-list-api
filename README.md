@@ -30,7 +30,20 @@ For connection to the database, please set environment variables in .env file in
 
 The other mandatory repository that needs to be ran for this project can be found on this link - https://github.com/lukavuletic/todo-list-client
 
-To run with docker-compose please create a docker-compose.yml file in a folder that includes both todo-list-api and todo-list-client and execute command `docker-compose up --build -d`
+To run with docker-compose please create a docker-compose.yml file in a folder that includes both todo-list-api and todo-list-client and setup .env file next to docker-compose.yml file then execute command `docker-compose up --build -d`
+
+.env
+```
+PG_PORT_1=HOST_PORT_FOR_POSTGRES
+PG_PORT_2=CONTAINER_PORT_FOR_POSTGRES
+PG_USER=POSTGRES_USERNAME
+PG_PW=POSTGRES_PASSWORD
+HOST=HOST_NAME
+API_PORT_1=HOST_PORT_FOR_API
+API_PORT_2=CONTAINER_PORT_FOR_API
+CLIENT_PORT_1=HOST_PORT_FOR_CLIENT
+CLIENT_PORT_2=CONTAINER_PORT_FOR_CLIENT
+```
 
 docker-compose.yml
 ```yml:
