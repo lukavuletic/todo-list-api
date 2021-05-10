@@ -65,7 +65,7 @@ async function connect() {
             deleteTodo: async (_: undefined, args: { id: ITodo['id'] }): Promise<string> => {
                 const { id } = args;
                 try {
-                    await client.query(`DELETE from ${table} WHERE "todoID" = ${id}`).then((res: any) => { return res });
+                    await client.query(`DELETE from ${table} WHERE "todoID" = ${id}`);
                     return 'Task successfully deleted';
                 } catch (err) {
                     throw new ApolloError(err);
