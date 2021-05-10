@@ -37,7 +37,7 @@ async function connect() {
         connectionString: `postgres://${process.env.PG_USER}:${process.env.PG_PW}@${process.env.HOST}:${process.env.PG_PORT}/todo`,
     });
 
-    for (let nRetry = 1; nRetry <= 5; nRetry++) {
+    for (let nRetry: number = 1; nRetry <= 5; nRetry++) {
         try {
             await client.connect();
             if (nRetry >= 1) {
@@ -46,8 +46,7 @@ async function connect() {
             break;
         } catch (e) {
             if (e.toString().includes('ECONNREFUSED') && nRetry < 5) {
-                console.info('ECONNREFUSED connecting to Postgres, ' +
-                    'maybe container is not ready yet, will retry ' + nRetry);
+                console.info('ECONNREFUSED connecting to Postgres, ' + 'maybe container is not ready yet, will retry ' + nRetry);
                 await new Promise(resolve => setTimeout(resolve, 10000));
             } else {
                 throw e;
@@ -114,7 +113,7 @@ async function connect() {
 
     const port = process.env.EXPRESS_PORT;
     try {
-        await new Promise((resolve, reject) => {
+        await new Promise((resolve) => {
             app.listen(port, () => {
                 resolve(port);
             });
