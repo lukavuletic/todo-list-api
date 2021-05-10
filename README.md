@@ -8,7 +8,25 @@ You also need PostgreSQL database named `todo`.
     `task` (not null text type)
     `category` (not null text type)
 
-For connection to the database, please see `server.js` file line 9 to 15.
+For Todo table creation you can just execute this query
+*Please keep in mind only to set OWNER to your user. superuser only serves here as an example. Check last line of the query below.*
+
+```sql:
+CREATE TABLE todo."Todo"
+(
+    "todoID" integer NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 0 MINVALUE 0 MAXVALUE 2147483647 CACHE 1 ),
+    task text COLLATE pg_catalog."default" NOT NULL,
+    category text COLLATE pg_catalog."default" NOT NULL,
+    CONSTRAINT "Todo1_pkey" PRIMARY KEY ("todoID")
+)
+
+TABLESPACE pg_default;
+
+ALTER TABLE todo."Todo"
+    OWNER to superuser;
+```
+
+For connection to the database, please set environment variables in .env file in root folder.
 
 The other mandatory repository that needs to be ran for this project can be found on this link - https://github.com/lukavuletic/todo-list-client
 
